@@ -87,7 +87,7 @@ ipython -i ophyd_tango.py
 Execute a simple bluesky plan like so:
 
 ```
-In [1]: RE(count([tango_attr], 10, 1), LiveTable(['double_scalar']))                                                                                                                          
+In [1]: RE(count([tango_attr], 10, 1), LiveTable(['double_scalar']))
 +-----------+------------+---------------+
 |   seq_num |       time | double_scalar |
 +-----------+------------+---------------+
@@ -113,3 +113,40 @@ Out[1]: ('20a661f7-665c-412f-b4a0-78f69aaced52',)
   interface may need to be extended to fully utilize it.
 * See ``first_steps.md`` for a log of some basic ``tango`` usage, including
   subscriptions.
+
+
+## Extra
+
+Follow up on this experimentation. Now `TangoAttribute` can be used with `ophyd.Device`
+```python
+# Get tango device name from instanciation
+class DeviceAttrNames(Device):
+    dou = Cpt(TangoAttribute, "/double_scalar")
+    flo = Cpt(TangoAttribute, "/float_scalar")
+
+# Hardcode full tango name (an ophyd device can read from two tango devices
+class DeviceFullNames(Device):
+    dou = Cpt(TangoAttribute, "sys/tg_test/1/double_scalar")
+    flo = Cpt(TangoAttribute, "sys/tg_test/1/float_scalar")
+
+device_attr_names = DeviceAttrNames("sys/tg_test/1", name="some_name")
+device_full_names = DeviceFullNames("", name="another_name")
+```
+
+
+A `tango.DeviceProxy` object can also be used like an `ophyd.Device`
+```python
+device_tango = TangoDevice("sys/tg_test/1", read_attrs=["ampli", "double_scalar"])
+```
+
+By default, `read` reads all the tango attribute. It can be filtered with `read_attrs`
+
+
+All those object can be used with basic BlueSky:
+
+```
+RE(count([tango_attr], 10, 1), LiveTable(['double_scalar']))
+RE(count([tango_attr_names], 10, 1), LiveTable(['double_scalar']))
+RE(count([device_full_names], 10, 1), LiveTable(['double_scalar']))
+RE(count([device_tango], 10, 1), LiveTable(['double_scalar']))
+```
